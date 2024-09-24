@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { AiOutlineClose, AiOutlineMenu } from "react-icons/ai";
-import NB from "../../images/NB.png";
 
 const Navbar = () => {
   // State to manage the navbar's visibility
@@ -44,8 +43,6 @@ const Navbar = () => {
               : "ease-in-out w-[60%] duration-500 fixed top-0 bottom-0 left-[-100%]"
           }
         >
-          {/* Mobile Logo */}
-          <img src={NB} alt="logo" className="w-28 " />
 
           {/* Mobile Navigation Items */}
           {navItems.map((item) => (

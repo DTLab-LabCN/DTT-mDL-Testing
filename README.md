@@ -29,7 +29,7 @@ $ cd orbit-mdl-webverifier
 3. Install Dependencies: Once inside the project folder, install all the required dependencies by running:
 
 ```bash
-$ npm install
+$ npm install --force
 ```
 using yarn
 ```bash

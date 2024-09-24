@@ -65,11 +65,6 @@ async function reconnect() {
     },[device])
 
 
-    const handleCharacteristicValueChanged = (event:any) => {
-      const target = event.target ;
-      const singleValue = new TextDecoder().decode(target.value);
-      console.log('Received notification:', singleValue);
-    };
 
     const connectBluetooth = async () => {
       try {
@@ -98,13 +93,11 @@ async function reconnect() {
         //set characteristic in context
         setCharacteristic(characteristic);
         
-        characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
         device.addEventListener('gattserverdisconnected', onDeviceDisconnected);
       
         // Start notifications
         await characteristic.startNotifications().then(()=>{
           console.log('Notification started!')
-          characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
         })
       
         setDevice(device)
