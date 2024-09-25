@@ -10,7 +10,7 @@ ARG NODE_USER=node
 ARG NODE_HOME=/home/${NODE_USER}
 
 # TODO: this currently prevent npm run build to work.
-ENV NODE_ENV=production
+#ENV NODE_ENV=production
 
 COPY . ${NODE_HOME}/${APP_DIR}
 WORKDIR ${NODE_HOME}/${APP_DIR}
