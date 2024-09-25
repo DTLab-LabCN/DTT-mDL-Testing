@@ -1,0 +1,17 @@
+---
+{{- with .Values.mdl_testing }}
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ $.Values.namespace }}
+  name: {{ .appName }}
+spec:
+  type: LoadBalancer
+  selector:
+    app: {{ .appName }}
+  ports:
+    - protocol: TCP
+      name: ui
+      port: {{ .ports.ui }}
+      targetPort: {{ .ports.ui }}
+{{- end }}

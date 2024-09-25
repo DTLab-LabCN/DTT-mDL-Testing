@@ -1,0 +1,11 @@
+---
+namespace: dtt-services
+letsencrypt: staging
+host: ''
+
+mdl_testing:
+  appName: mdl-testing
+  image: idlaborg/dtt-mdl-testing
+  version: ''
+  ports:
+    ui: 4173

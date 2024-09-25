@@ -1,0 +1,89 @@
+name: deploy-dev
+
+on:
+  push:
+    tags: [ "dev-v*.*.*" ]
+
+env:
+  TAG: ${{ github.ref_name }}
+  IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/dtt-mdl-testing
+  LETSENCRYPT: prod
+  HOST: mdl-testing-dev.dtlab-labcn.app
+  CHART: dtt-mdl-testing
+  NAMESPACE: dtt-services
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login
+        run: |
+          docker login \
+            -u ${{ secrets.DOCKERHUB_USERNAME }} \
+            -p ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build
+        run: |
+          docker build . --tag ${{ env.IMAGE }}:${{ env.TAG }}
+      - name: Push
+        run: |
+          docker push ${{ env.IMAGE }}:${{ env.TAG }}
+
+  deploy:
+    needs: [build]
+    runs-on: arc-dtt-dev
+    steps:
+      - name: Create GitHub deployment
+        uses: chrnorm/deployment-action@v2
+        id: deployment
+        with:
+          token: '${{ github.token }}'
+          environment: development
+
+      - name: Update deployment status
+        uses: chrnorm/deployment-status@v2
+        if: always()
+        with:
+          token: '${{ secrets.GITHUB_TOKEN }}'
+          state: ${{ job.status }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create kube config
+        run: |
+          mkdir -p $HOME/.kube/
+          echo "${{ secrets.KUBECONFIG_DEV }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Install Helm Binairies
+        run: |
+          sudo apt update && sudo apt install curl -y
+          curl -O https://get.helm.sh/helm-v3.8.0-linux-amd64.tar.gz
+          tar -zxvf helm-v3.8.0-linux-amd64.tar.gz
+          sudo mv linux-amd64/helm /usr/local/bin/helm
+          helm version
+
+      - name: Lint Helm Charts
+        run: |
+          helm lint ./charts/
+
+      - name: Deploy Helm Charts
+        run: |
+          helm upgrade --install --atomic --timeout 2m \
+            ${{ env.CHART }} ./charts/ -f ./charts/values.yaml \
+            --namespace ${{ env.NAMESPACE }} \
+            --set letsencrypt=${{ env.LETSENCRYPT }} \
+            --set host=${{ env.HOST }} \
+            --set frontend.version=${{ env.TAG }}
+
+      - name: Update deployment status
+        uses: chrnorm/deployment-status@v2
+        if: always()
+        with:
+          token: '${{ secrets.GITHUB_TOKEN }}'
+          state: ${{ job.status }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
