@@ -8,7 +8,7 @@ env:
   TAG: ${{ github.ref_name }}
   IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/dtt-mdl-testing
   LETSENCRYPT: prod
-  HOST: mdl-testing-dev.dtlab-labcn.app
+  HOST: mdl-testing.dtt-dev.dtlab-labcn.app
   CHART: dtt-mdl-testing
   NAMESPACE: dtt-services
 
