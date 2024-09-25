@@ -1,0 +1,39 @@
+#! /usr/bin/env bash
+# set -x
+set -e
+
+TAG_SCRIPT_DIR="../DTT-Deployments"
+TAG_SCRIPT_REPO="git@github.com:DTLab-LabCN/DTT-Deployments.git"
+# main is the default branch, but just in case
+TAG_SCRIPT_DIR_BRANCH="main"
+
+
+if [ ! -d "$TAG_SCRIPT_DIR" ]; then
+    echo "$TAG_SCRIPT_DIR is not present, cloning repository $TAG_SCRIPT_REPO in parent directory"
+    (
+        cd ..
+        git clone $TAG_SCRIPT_REPO
+    )
+fi
+echo "Making sure $TAG_SCRIPT_DIR repository is up to date"
+(
+    cd "$TAG_SCRIPT_DIR"
+    git checkout "$TAG_SCRIPT_DIR_BRANCH"
+    git pull --verbose --progress
+)
+if [ ! -d "$TAG_SCRIPT_DIR/venv" ]; then
+    echo "Creating and populating python virtual environnment in $TAG_SCRIPT_DIR/venv"
+    (
+        cd "$TAG_SCRIPT_DIR"
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        ls -la
+        pip install -r requirements.txt
+    )
+fi
+# This needs to be sourced again, since it was done in a subshell
+source "$TAG_SCRIPT_DIR/venv/bin/activate"
+
+# now at last, invoke the real tag-and-push.py script, passing eventual arguments
+"$TAG_SCRIPT_DIR/tag-and-push.py" "$@"

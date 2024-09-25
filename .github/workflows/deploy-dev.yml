@@ -78,7 +78,7 @@ jobs:
             --namespace ${{ env.NAMESPACE }} \
             --set letsencrypt=${{ env.LETSENCRYPT }} \
             --set host=${{ env.HOST }} \
-            --set frontend.version=${{ env.TAG }}
+            --set mdl_testing.version=${{ env.TAG }}
 
       - name: Update deployment status
         uses: chrnorm/deployment-status@v2
