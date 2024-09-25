@@ -10,7 +10,7 @@ ARG NODE_USER=node
 ARG NODE_HOME=/home/${NODE_USER}
 
 # TODO: this currently prevent npm run build to work.
-# ENV NODE_ENV=production
+ENV NODE_ENV=production
 
 COPY . ${NODE_HOME}/${APP_DIR}
 WORKDIR ${NODE_HOME}/${APP_DIR}
@@ -24,6 +24,6 @@ RUN npm clean-install --force && \
 # Run the server process as (preferably) non-root unix user
 USER ${NODE_USER}
 
-EXPOSE 5173/tcp
+EXPOSE 4173/tcp
 
 CMD ["npm", "run", "host"]

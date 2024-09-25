@@ -15,4 +15,4 @@ else
 fi
 
 # docker run --rm -it --init -e NODE_ENV=production --name ${IMAGE_NAME} "${IMAGE_NAME}:${IMAGE_VERSION}"
-docker run --rm --init -it -p 5173:5173 --name ${IMAGE_NAME} "${IMAGE_NAME}:${IMAGE_VERSION}"
+docker run --rm --init -it -p 4173:4173 --name ${IMAGE_NAME} "${IMAGE_NAME}:${IMAGE_VERSION}"
