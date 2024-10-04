@@ -1,0 +1,31 @@
+---
+{{- with .Values.mdl_testing }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ $.Values.namespace }}
+  name: {{ .appName }}
+  labels:
+    app: {{ .appName }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .appName }}
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: {{ .appName }}
+          image: {{ .image }}:{{ .version }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .ports.ui }}
+          env:
+            - name: NODE_ENV
+              value: production
+{{- end }}

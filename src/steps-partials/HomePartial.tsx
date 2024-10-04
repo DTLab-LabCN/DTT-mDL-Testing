@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { useNavigate } from "react-router-dom";
-import { Buffer } from 'buffer'; if (!window.Buffer) {   window.Buffer = Buffer; } 
+import { useFormData } from "../utils/FormDataContext";
+import { Buffer } from 'buffer';
+if (!window.Buffer) {   window.Buffer = Buffer; } 
 window.Buffer = window.Buffer || require("buffer").Buffer;
 
 const HomePartial = () => {
@@ -12,6 +14,7 @@ const HomePartial = () => {
     cookiesAllowed: boolean;
     bluetoothSupported: boolean;
     cameraSupported: boolean;
+    cameraPermission: boolean;
   }
 
   //State's
@@ -19,23 +22,28 @@ const HomePartial = () => {
     chromeVersion: false,
     cookiesAllowed: false,
     bluetoothSupported: false,
-    cameraSupported: false
+    cameraSupported: false,
+    cameraPermission: false
   });
 
   const [systemCheckPerformed, setSystemCheckPerformed] = useState(false);
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
+  const { setCompletedSteps } = useFormData();
 
   const handleSystemCheck = async() => {
     const { chromeVersion, chromeDetected } = checkChromeVersion();
     const cookiesAllowed = checkCookiesAllowed();
     const bluetoothSupported = checkBluetoothSupported();
     const cameraSupported = await checkCameraSupported();
+    const cameraPermission = await checkCameraPermission()
 
     setSystemCheckResults({
       chromeVersion,
       cookiesAllowed,
       bluetoothSupported,
-      cameraSupported
+      cameraSupported,
+      //@ts-ignore
+      cameraPermission
     });
 
     const errors = [];
@@ -53,6 +61,9 @@ const HomePartial = () => {
     }
     if (!bluetoothSupported) {
         errors.push("Please use a device that supports Bluetooth to continue with the process.");
+    }
+    if (!cameraPermission) {
+        errors.push("Please allow permission to use camera");
     }
 
     setErrorMessages(errors);
@@ -81,13 +92,51 @@ const HomePartial = () => {
     return isBluetoothSupported;
   };
 
+  // Function to check Camera permission
+  const checkCameraPermission = async () => {
+    try {
+      // Check if the camera permission is granted
+      const permissionStatus = await navigator.permissions.query({
+        name: "camera" as PermissionName,
+      });
+
+      if (permissionStatus.state === "granted") {
+        return true; // Camera is supported and permission is granted
+      } else if (permissionStatus.state === "prompt") {
+        console.log("Camera permission needs to be prompted");
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+
+          stream.getTracks().forEach((track) => track.stop()); // Stop the camera if permission is granted
+          return true;
+        } catch (error) {
+          console.log(
+            "User denied camera permission or an error occurred:",
+            error
+          );
+          return false;
+        }
+      } else if (permissionStatus.state === "denied") {
+        console.log("Camera permission is denied");
+        return false; // Camera is supported but permission is denied
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking camera permission:", error);
+    }
+  };
+
   // Implement the logic to check if Camera is supported
   const checkCameraSupported = async() => {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = devices.filter(device => device.kind === 'videoinput');
-    const videosupported = videoDevices.length > 0
-
-    return videosupported;
+    const videoSupported = videoDevices.length > 0
+    if(videoSupported){
+      checkCameraPermission();
+    }
+    return videoSupported;
   };
 
   const allChecksPassed = Object.values(systemCheckResults).every(Boolean);
@@ -96,6 +145,7 @@ const HomePartial = () => {
   const handleSubmit = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     if (allChecksPassed) {
+      setCompletedSteps((prev:any) => [...prev, 1]);
       navigate("/step1");
     }
   };
@@ -239,6 +289,14 @@ const HomePartial = () => {
               </div>
               <div className="text-gray-800 text-sm font-normal">
                 Camera Available
+              </div>
+            </div>
+            <div className="justify-start items-center gap-2.5 inline-flex">
+              <div className="self-stretch px-[5px] justify-start items-center gap-2.5 flex">
+                {renderIcon(systemCheckResults.cameraPermission)}
+              </div>
+              <div className="text-gray-800 text-sm font-normal">
+                Camera Permission
               </div>
             </div>
             <div className="justify-start items-start gap-4 inline-flex">

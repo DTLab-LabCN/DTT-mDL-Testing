@@ -3,10 +3,12 @@ import Sidebar from "../components/Sidebar";
 import { useNavigate, useLocation } from "react-router-dom";
 import StepsComponent from "../pages/components/StepsComponent";
 import { useBluetooth } from "../utils/BluetoothContext";
+import { useFormData } from "../utils/FormDataContext";
 
 const Step7Partial = () => {
   const navigate = useNavigate();
   const { setDevice, device, IsValidCert }:any = useBluetooth();
+  const { setCompletedSteps, completedSteps } = useFormData();
   const location = useLocation();
   const [base64Images, setBase64Images] = useState<any>({});
   const { mDLData, selectedAttributes,ismDLAltered, IssuerCertificateValid, nameSpaceRead, ReaderAuthPassed, isvalid } = location.state || {}; // Get selectedAttributes from state or default to an empty object
@@ -227,6 +229,11 @@ const Step7Partial = () => {
       }
 	  },[device])
 
+    useEffect(() => { 
+      if (!completedSteps.includes(2)) {
+        navigate("/"); // Navigate back to Step 1
+      }
+  }, [completedSteps, navigate]);
 
     const genderMap:any = {
       1: "Male",
@@ -238,6 +245,7 @@ const Step7Partial = () => {
         .filter(([_, isSelected]) => isSelected)
         .map(([id, _]) => `selected=${id}`)
         .join("&");
+        setCompletedSteps((prev:any) => [...prev, 8]);
       navigate(`/step8`, { state: { mDLData, selectedAttributes, categories, ismDLAltered, IssuerCertificateValid, nameSpaceRead, ReaderAuthPassed }});
     };
 
@@ -340,7 +348,7 @@ const Step7Partial = () => {
                 </div>
                 <div className="text-gray-500 text-base">
                   {/* org.iso.18013.5.1.mDL */}
-                  {nameSpaceRead ?? 'org.iso.18013.5.1.mDL'}
+                  {nameSpaceRead ?? ''}
                 </div>
               </div>
             </div>

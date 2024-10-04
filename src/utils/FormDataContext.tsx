@@ -1,4 +1,4 @@
-import React, {  useContext, ReactNode } from "react";
+import React, {  useContext, ReactNode, useState, useEffect } from "react";
 
 // Define the shape of the form data
 interface FormData {
@@ -14,6 +14,8 @@ interface FormData {
 interface FormDataContextType {
   formData: FormData;
   updateFormData: (newData: Partial<FormData>) => void;
+  completedSteps:any;
+  setCompletedSteps:React.Dispatch<React.SetStateAction<any>>
 }
 
 const FormDataContext = React.createContext<FormDataContextType | undefined>(
@@ -46,13 +48,14 @@ export const FormDataProvider: React.FC<FormDataProviderProps> = ({
     mobileType: "Android",
     // Add other fields as necessary
   });
+  const [completedSteps, setCompletedSteps] = useState([0]);
 
   const updateFormData = (newData: Partial<FormData>) => {
     setFormData((prevData) => ({ ...prevData, ...newData }));
   };
 
   return (
-    <FormDataContext.Provider value={{ formData, updateFormData }}>
+    <FormDataContext.Provider value={{ formData, updateFormData, setCompletedSteps, completedSteps }}>
       {children}
     </FormDataContext.Provider>
   );

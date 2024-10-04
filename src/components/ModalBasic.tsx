@@ -24,15 +24,6 @@ const ModalBasic: React.FC<ModalBasicProps> = ({
 }) => {
   const modalContent = useRef<HTMLDivElement>(null);
 
-  // close on click outside
-  useEffect(() => {
-    const clickHandler = ({ target }: MouseEvent) => {
-      if (!modalOpen || modalContent.current?.contains(target as Node)) return;
-      setModalOpen(false);
-    };
-    document.addEventListener("click", clickHandler);
-    return () => document.removeEventListener("click", clickHandler);
-  });
 
   // close if the esc key is pressed
   useEffect(() => {

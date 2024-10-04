@@ -1,30 +1,38 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import StepsComponent from "../pages/components/StepsComponent";
 import { useFormData } from "../utils/FormDataContext";
 
 const Step1Partial = () => {
-  const { formData, updateFormData } = useFormData();
+  const { formData, updateFormData, completedSteps, setCompletedSteps } = useFormData();
   const navigate = useNavigate();
   // State to track if all required fields are filled
   const [isFormValid, setIsFormValid] = useState<boolean>(false);
+
+  useEffect(() => { 
+    // Check if the current step is allowed
+    if (!completedSteps.includes(1)) {
+      navigate("/"); // Navigate back to Step 0
+    }
+  }, [completedSteps, navigate]);
 
 	useEffect(() => {
     if (formData.mobileType !== 'Android') {
         updateFormData({ mobileType: 'Android' });
     }
-}, [formData.mobileType, updateFormData]);
+  }, [formData.mobileType, updateFormData]);
 
   // Update isFormValid whenever formData changes
 	useEffect(() => {
-    const isValid:any = formData.companyName && formData.applicationName && formData.applicationVersion && formData.description;
+    const isValid:any = formData.companyName && formData.applicationName && formData.applicationVersion;
     setIsFormValid(isValid);
 }, [formData]);
 
   // Navigate to step 2
   const handleSubmit = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    setCompletedSteps((prev:any) => [...prev, 2]);
     navigate("/step2");
   };
 

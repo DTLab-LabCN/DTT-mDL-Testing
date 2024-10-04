@@ -1,0 +1,26 @@
+---
+{{- with .Values.mdl_testing }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: {{ $.Values.namespace }}
+  name: {{ .appName }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-{{ $.Values.letsencrypt }}
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: {{ $.Values.host }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ .appName }}
+            port:
+              number: {{ .ports.ui }}
+        pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - {{ $.Values.host }}
+    secretName: {{ .appName }}-tls
+{{- end }}
