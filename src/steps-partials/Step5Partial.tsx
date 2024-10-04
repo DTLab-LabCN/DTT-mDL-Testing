@@ -5,11 +5,13 @@ import StepsComponent from "../pages/components/StepsComponent";
 import FileUpload from "../pages/components/FileUpload";
 import Tooltip from "../components/Tooltip";
 import { useBluetooth } from "../utils/BluetoothContext";
+import { useFormData } from "../utils/FormDataContext";
 
 const Step5Partial = () => {
   const navigate = useNavigate();
 
   const { setDevice, device, setVerifierCert }:any = useBluetooth();
+  const { setCompletedSteps, completedSteps } = useFormData()
 
   const [selectedOption, setSelectedOption] = useState("provided");
 
@@ -84,8 +86,15 @@ AiB7Da/BOFoCO2SnVUVYedUnZHl4xnSBvHSPSEtJxF0kbw==
       }
 	  },[device])
 
+    useEffect(() => { 
+      if (!completedSteps.includes(2)) {
+        navigate("/"); // Navigate back to Step 1
+      }
+  }, [completedSteps, navigate]);
+
     // Navigate to step 6
     const navigateToStep6 = () => {
+      setCompletedSteps((prev:any) => [...prev, 6]);
       navigate(`/step6`, { state: { selectedOption } });
     }
 
@@ -163,10 +172,7 @@ AiB7Da/BOFoCO2SnVUVYedUnZHl4xnSBvHSPSEtJxF0kbw==
                   position="right"
                 >
                   <span>
-                    An X.509 certificate validates the authenticity of the mDL,
-                    confirming it is issued by a trusted authority. It includes
-                    the issuer's public key, digital signature, and validity
-                    period.
+                  The verifier's X.509 certificate is a digital certificate used to authenticate the identity of the verifier. This ensures that the verifier is legitimate and trusted during the mdoc request process. Uploading this certificate allows the holder to securely verify the verifier's identity.
                   </span>
                 </Tooltip>
               </div>

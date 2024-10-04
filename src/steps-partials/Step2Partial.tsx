@@ -13,8 +13,8 @@ import { Buffer } from 'buffer'; if (!window.Buffer) {   window.Buffer = Buffer;
 window.Buffer = window.Buffer || require("buffer").Buffer; 
 import StepsComponent from "../pages/components/StepsComponent";
 import CameraIcon from "../images/CameraIcon.png";
-import ReactDOM from "react-dom";
 import { useBluetooth } from "../utils/BluetoothContext";
+import { useFormData } from "../utils/FormDataContext";
 
 // CustomViewFinder.tsx or at the top of the same file
 const CustomViewFinder = ({ size }: { size: number }) => {
@@ -87,8 +87,10 @@ const Step2Partial = () => {
   const [validQrCode, setValidQrCode] = useState(true);
   const [mobileSupportsBle, setMobileSupportsBle] = useState<boolean | null>(null);
   const [showQrReader, setShowQrReader] = useState(true);
+  const [supportPeripheralServerMode, setSupportPeripheralServerMode] = useState<any>(null);
+  const [supportCentralServerMode, setSupportCentralServerMode] = useState<any>(null);
   const qrReaderRef:any = useRef(null);
-
+  const { completedSteps, setCompletedSteps } = useFormData();
 
     // Effect to stop the camera when hiding the QrReader
     useEffect(() => {
@@ -103,10 +105,17 @@ const Step2Partial = () => {
       }
     }, [showQrReader]);
 
-  const navigate = useNavigate();
-  // Context to store key pair and Skdevice
-  const { setKeyPair, setSkDeviceContext, setServiceId } = useBluetooth();
+    const navigate = useNavigate();
+    // Context to store key pair and Skdevice
+    const { setKeyPair, setSkDeviceContext, setServiceId, ServiceId } = useBluetooth();
 
+    useEffect(() => { 
+      // Check if the current step is allowed
+      if (!completedSteps.includes(2)) {
+        navigate("/"); // Navigate back to Step 0
+      }
+  }, [completedSteps, navigate]);
+    
   // Initialize EC context
   const ec = new EC('p256');
 
@@ -151,6 +160,19 @@ const Step2Partial = () => {
     }
   };
 
+  function toUUID(serviceId:string) {
+    if (serviceId.length !== 32) {
+      throw new Error("Service ID must be 32 characters long.");
+    }
+    
+    return (
+      serviceId.slice(0, 8) + '-' +
+      serviceId.slice(8, 12) + '-' +
+      serviceId.slice(12, 16) + '-' +
+      serviceId.slice(16, 20) + '-' +
+      serviceId.slice(20)
+    );
+  }
 
   const CreateKeys = (result:any) => {
     try {
@@ -211,10 +233,15 @@ const Step2Partial = () => {
       // Decode Device Engagement data to diagnostic format
       let DecodedDeviceEngData = cbor.decode(encodedBuffer);
 
+      let centralMode = DecodedDeviceEngData.get(2)[0][0]
+      let peripheralMode = DecodedDeviceEngData.get(2)[0][1]
       let serviceIDMap = DecodedDeviceEngData.get(2)[0][2]
       let ServiceId = serviceIDMap.get(10)
+      const uuid = toUUID(ServiceId.toString('hex'));
 
-      setServiceId(ServiceId)
+      setSupportPeripheralServerMode(peripheralMode)
+      setSupportCentralServerMode(centralMode);
+      setServiceId(uuid)
 
       // Check for BLE support in device engagement data
       let bleSupports = DecodedDeviceEngData.get(2)[0][0]
@@ -347,6 +374,7 @@ const Step2Partial = () => {
   const handleSubmit = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (qRData && validQrCode && mobileSupportsBle) {
       event.preventDefault();
+      setCompletedSteps((prev:any) => [...prev, 3]);
       navigate("/step3");
     }
   };
@@ -522,7 +550,13 @@ const Step2Partial = () => {
             </div>
           </div>
         )}
-
+        {ServiceId && 
+          <div style={style.ServiceInfo}>
+            Support for mdoc peripheral server mode : <strong>{supportPeripheralServerMode === 1 ? 'true' : 'false'}</strong> <br/>
+            Support for mdoc central client Mode : <strong>{supportCentralServerMode === 1 ? 'true' : 'false'}</strong> <br/>
+            UUID for mdoc peripheral server mode : <strong>{ServiceId}</strong> <br/>
+          </div>
+        }
 
         <div className="self-stretch flex justify-between items-center mt-4">
           <div className="bg-[#ECF4FC] rounded flex my-6 items-center gap-1.5">
@@ -600,6 +634,9 @@ const style = {
     fontSize: "24px",
     position: "relative",
   } as React.CSSProperties,
+  ServiceInfo:{
+    alignSelf:'center'
+  } as React.CSSProperties
 };
 
 export default Step2Partial;

@@ -13,8 +13,10 @@ import StepsComponent from "../pages/components/StepsComponent";
 import ModalBasic from "../components/ModalBasic";
 import ProgressBar from "../pages/components/ProgressBar";
 import { useBluetooth } from "../utils/BluetoothContext";
+import { useFormData } from "../utils/FormDataContext";
 
-import { Buffer } from 'buffer'; if (!window.Buffer) {   window.Buffer = Buffer; } 
+import { Buffer } from 'buffer';
+ if (!window.Buffer) {   window.Buffer = Buffer; } 
 window.Buffer = window.Buffer || require("buffer").Buffer;
 
 
@@ -112,6 +114,7 @@ const Step6Partial = () => {
   const { characteristic, KeyPair, setDevice, device, SkDeviceContext, VerifierCert, IssuerCert, setIsValidCert }:any = useBluetooth();
   const location = useLocation();
   const { selectedOption } = location.state || {}
+  const { setCompletedSteps ,completedSteps } = useFormData()
 
   const [selectAll, setSelectAll] = useState(false);
   const [percent, setPercent] = useState(0);
@@ -154,6 +157,12 @@ const Step6Partial = () => {
     const text = decoder.decode(data);
     return text;
   };
+
+  useEffect(() => { 
+    if (!completedSteps.includes(2)) {
+      navigate("/"); // Navigate back to Step 1
+    }
+}, [completedSteps, navigate]);
 
 
   // function handle Received data over BLE
@@ -206,7 +215,7 @@ const Step6Partial = () => {
 
     setSelectedMDLNames(selectedMDLNames);
 
-
+    setCompletedSteps((prev:any) => [...prev, 7]);
     navigate(`/step7`, { state: { mDLData, selectedAttributes, categories, ismDLAltered, IssuerCertificateValid, nameSpaceRead, ReaderAuthPassed, isvalid } });
   };
 
@@ -272,6 +281,37 @@ const Step6Partial = () => {
   }, [isStarted]);
 
   useEffect(() => {
+    let progressInterval:any ;
+    // Wait for 15 seconds before starting the check
+    const startTimerTimeout = setTimeout(() => {
+      // Only start the timer if 'isStarted' is still false after 15 seconds
+      if (!isStarted) {
+        // Start the interval after the 15-second wait
+        progressInterval = setInterval(() => {
+          setProgressValue((prev) => {
+            const newValue = prev < 100 ? prev + 1 : 100;
+            if (newValue === 100) {
+              clearInterval(progressInterval); // Clear interval when progress reaches 100
+              setShowProgress(false);
+              setBasicModalOpen(false); // Close the modal
+              alert('Not received response from mobile holder');
+            }
+            return newValue;
+          });
+        }, 1000); // Increment progress every second for a total of 100 seconds
+      }
+    }, 15000); // 15-second delay before checking 'isStarted'
+
+    return () => {
+      // Clear both timeout and interval on component unmount or effect cleanup
+      clearTimeout(startTimerTimeout);
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+    };
+  }, [isStarted]);
+
+  useEffect(() => {
     let progressInterval: any;
     if (basicModalOpen) {
       setModalTitle("Waiting for response from mDL holder...");
@@ -281,34 +321,30 @@ const Step6Partial = () => {
       setProgressValue(0); // Reset progress to 0
       setShowProgress(false); // Hide progress initially
 
-        const timer1 = setTimeout(() => {
+      if(isStarted){
           setModalTitle("Receiving response from mDL holder...");
           setModalText("This process could take up to 4 minutes.");
           setProgressValue(0); // Reset progress to 0 again before starting
           setShowProgress(true); // Show progress bar
-  
-          progressInterval = setInterval(() => {
-            setProgressValue((prev) => {
-              const newValue = prev < 100 ? prev + 1 : 100;
-              if (newValue === 100) {
-                clearInterval(progressInterval);
-                setShowProgress(false);
-                setBasicModalOpen(false); // Close the modal
-                navigateToStep7(); // Navigate to step 6
-              }
-              return newValue;
-            });
-          }, 1000); // Progress every second to simulate 100 seconds
-        }, 15000); // 15 seconds
+            progressInterval = setInterval(() => {
+              setProgressValue((prev) => {
+                const newValue = prev < 100 ? prev + 1 : 100;
+                if (newValue === 100) {
+                  clearInterval(progressInterval);
+                  setShowProgress(false);
+                  setBasicModalOpen(false); // Close the modal
+                }
+                return newValue;
+              });
+            }, 1000); // Progress every second to simulate 100 seconds
+          }
 
-        
         return () => {
-          clearTimeout(timer1);
           clearInterval(progressInterval);
         };
 
       }
-  }, [basicModalOpen]);
+  }, [basicModalOpen,isStarted]);
 
   function onDeviceDisconnected(event:any) {
 		const device = event.target;
