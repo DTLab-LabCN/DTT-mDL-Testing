@@ -14,5 +14,4 @@ else
     docker build . -t "${IMAGE_NAME}:${IMAGE_VERSION}"
 fi
 
-# docker run --rm -it --init -e NODE_ENV=production --name ${IMAGE_NAME} "${IMAGE_NAME}:${IMAGE_VERSION}"
-docker run --rm --init -it -p 4173:4173 --name ${IMAGE_NAME} "${IMAGE_NAME}:${IMAGE_VERSION}"
+docker run -e NODE_ENV=production --init -it -p 4173:4173 --name ${IMAGE_NAME} --rm "${IMAGE_NAME}:${IMAGE_VERSION}"
