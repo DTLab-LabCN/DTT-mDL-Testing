@@ -5,10 +5,12 @@ import StepsComponent from "../pages/components/StepsComponent";
 import FileUpload from "../pages/components/FileUpload";
 import Tooltip from "../components/Tooltip";
 import { useBluetooth } from "../utils/BluetoothContext"
+import { useFormData } from "../utils/FormDataContext";
 
 const Step4Partial = () => {
   const navigate = useNavigate();
   const { setDevice, device }:any = useBluetooth();
+  const { setCompletedSteps, completedSteps }:any = useFormData();
 
   const handleSubmit = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -17,9 +19,15 @@ const Step4Partial = () => {
 
   // Navigate to step 5
   const handleNavigate = (event: React.MouseEvent<HTMLButtonElement>) => {
+      setCompletedSteps((prev:any) => [...prev, 5]);
       navigate("/step5");
   };
 
+  useEffect(() => { 
+    if (!completedSteps.includes(2)) {
+      navigate("/"); // Navigate back to Step 1
+    }
+}, [completedSteps, navigate]);
 
   function onDeviceDisconnected(event:any) {
       const device = event.target;

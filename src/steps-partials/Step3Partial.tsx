@@ -3,10 +3,12 @@ import Sidebar from "../components/Sidebar";
 import { useNavigate } from "react-router-dom";
 import StepsComponent from "../pages/components/StepsComponent";
 import { useBluetooth } from "../utils/BluetoothContext"
+import { useFormData } from "../utils/FormDataContext";
 
 const Step3Partial = () => {
 
-  const { setCharacteristic, setDevice, device, ServiceId}:any = useBluetooth();
+  const { setCharacteristic, setDevice, device, ServiceId, characteristic }:any = useBluetooth();
+  const { setCompletedSteps, completedSteps } = useFormData();
   const [isConnected, setIsConnected] = useState(false);
   const [deviceName, setDeviceName] = useState("");
   const [bleError, setBleError] = useState(false);
@@ -14,18 +16,15 @@ const Step3Partial = () => {
   const navigate = useNavigate();
 
   // Service and Characteristic UUID
-  // const ServiceID = '0000ffe0-0000-1000-8000-00805f9b34fb'
-  const ServiceID = ServiceId ?? '0000ffe0-0000-1000-8000-00805f9b34fb'
-	const CharacteristicsId = '10001000-0000-1000-8000-00805f9b34fb'
+  const ServiceID = ServiceId;
 
   
 async function reconnect() {
   try {
       console.log('Attempting to reconnect...');
-      console.log('device:',device)
       let server = await device.gatt.connect();
       const services = await server.getPrimaryService(ServiceID);
-      const characteristics = await services.getCharacteristic(CharacteristicsId);
+      const characteristics = await services.getCharacteristic(characteristic);
       setCharacteristic(characteristics)
       console.log('Reconnected to GATT server');
   } catch (error) {
@@ -42,7 +41,7 @@ async function reconnect() {
 		setIsConnected(false);
     
     // set device in context
-		setDevice(device);
+		setDevice(null);
 	  }
 
     const handleDisconnected = (event:any) => {
@@ -78,35 +77,48 @@ async function reconnect() {
         // set device name
         setDeviceName(device.name);
         console.log('Device: ',device)
-        setDevice(device)
-        console.log("Device_name",device.name)
       
         // Connect to the GATT server
         const server = await device.gatt.connect();
-      
         device.addEventListener('gattserverdisconnected', onDeviceDisconnected);
       
         const service = await server.getPrimaryService(ServiceID);
 
-        // Get the characteristic
-        const characteristic = await service.getCharacteristic(CharacteristicsId);
-        //set characteristic in context
-        setCharacteristic(characteristic);
-        
-        device.addEventListener('gattserverdisconnected', onDeviceDisconnected);
-      
-        // Start notifications
-        await characteristic.startNotifications().then(()=>{
-          console.log('Notification started!')
-        })
+        let characteristicIds = await service.getCharacteristics()
+        console.log('Available characteristics: ',  characteristicIds)
+        // Loop through all characteristics
+        for (const characteristic of characteristicIds) {
+          // Optionally set the characteristic in context if you need to keep track of it
+          setCharacteristic(characteristic);
+
+          // Add disconnection event listener (this can be done once outside the loop if needed)
+          device.addEventListener('gattserverdisconnected', onDeviceDisconnected);
+
+          // Start notifications if the characteristic supports it
+          if (characteristic.properties.notify) {
+            try {
+              await characteristic.startNotifications();
+              console.log(`Notification started on characteristic: ${characteristic.uuid}`);
+            } catch (error) {
+              console.error(`Error starting notifications on characteristic ${characteristic.uuid}:`, error);
+            }
+          } else {
+            console.log(`Characteristic ${characteristic.uuid} does not support notifications.`);
+          }
+        }
       
         setDevice(device)
         setIsConnected(true);
-      } catch (error) {
-        setBleError(true)
+        setBleError(false)
+      } catch (error:any) {
         reconnect();
         console.log('Bluetooth connection failed, please reconnect!')
         console.error('Bluetooth connection failed', error);
+        if (error != 'NotFoundError: User cancelled the requestDevice() chooser.') {
+          setBleError(true);  // Set error if the error is different
+        } else {
+          setBleError(false); // No error for the specific case
+        }
       }
     };
 
@@ -116,10 +128,19 @@ async function reconnect() {
       ? "bg-blue-600 hover:bg-blue-700 shadow-sm rounded flex items-center gap-1.5 text-white text-sm font-semibold"
       : "bg-gray-300 cursor-not-allowed rounded flex items-center gap-1.5 text-white text-sm font-semibold";
 
+    useEffect(() => { 
+        // Check if the current step is allowed
+        if (!completedSteps.includes(2)) {
+          navigate("/"); // Navigate back to Step 1
+        }
+    }, [completedSteps, navigate]);
+
+
     // Navigate to step 4
     const handleSubmit = (event: React.MouseEvent<HTMLButtonElement>) => {
       if (isConnected) {
         event.preventDefault();
+        setCompletedSteps((prev:any) => [...prev, 4]);
         navigate("/step4");
       }
     };

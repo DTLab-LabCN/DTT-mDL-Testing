@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { useNavigate, useLocation } from "react-router-dom";
-import Portrait from "../images/portrait.png";
 import StepsComponent from "../pages/components/StepsComponent";
 import { useFormData } from "../utils/FormDataContext";
 import { useBluetooth } from "../utils/BluetoothContext";
@@ -10,10 +9,12 @@ import 'jspdf-autotable';
 
 const Step8Partial = () => {
   const { setDevice, device, IsValidCert }:any = useBluetooth();
+  const { completedSteps } = useFormData();
   const location = useLocation();
   const formData = useFormData();
+  const navigate = useNavigate();
   const [base64Images, setBase64Images] = useState<any>({});
-  const [DownloadSuccess,setDownloadSuccess] = useState<any>()
+  const [downloadSuccess,setDownloadSuccess] = useState<any>()
   const { mDLData,selectedAttributes, ismDLAltered, nameSpaceRead, ReaderAuthPassed } = location.state || {}; // Get selectedAttributes from state or default to an empty object
 
   type Attribute = {
@@ -110,11 +111,11 @@ const Step8Partial = () => {
 
       const AppData = {
           "Date Tested" : `${new Date().toLocaleDateString()}`,
-          "Application Name:" : `${formData.formData.applicationName || "Orbit Edge Wallet"}`,
-          "Company Name" : `${formData.formData.companyName || "Northern Block"}`,
-          "Application Version" : `${formData.formData.applicationVersion || "1.0.0"}`,
-          "Short Description of the App" : `${formData.formData.description || "Mobile wallet that can receive, store, and share credentials."}`,
-          "Mobile Type" : `${formData.formData.mobileType || "Android"}`
+          "Application Name:" : `${formData.formData.applicationName ?? ""}`,
+          "Company Name" : `${formData.formData.companyName ?? ""}`,
+          "Application Version" : `${formData.formData.applicationVersion ?? ""}`,
+          "Short Description of the App" : `${formData.formData.description ?? ""}`,
+          "Mobile Type" : `${formData.formData.mobileType ?? ""}`
         }
     
       const doc:any = new jsPDF();
@@ -158,12 +159,15 @@ const Step8Partial = () => {
       addSectionHeading("User Information",20);
 
       // Format the data into key-value pairs
-      const formattedData = Object.entries(data).map(([key, value]) => {
+      const formattedData = Object.entries(data).map(([key, value]:any) => {
         if (key === 'portrait' || key === 'signature_usual_mark') {
           return null; // Skip adding this for now, handle it separately
         }
         if (key === 'signature_usual_mark') {
           key += ' '; // Add a space to the key if it's 'signature_usual_mark'
+        }
+        if (key === 'sex') {
+          value = genderMap[value] || value; // Map 1/2 to 'Male'/'Female', fallback to original value if not found
         }
         return [key, value];
       }).filter(item => item !== null);
@@ -218,7 +222,7 @@ const Step8Partial = () => {
 
 
   // Step 1: Extract Selected Attributes
-  const dynamicData = mDLData.reduce((acc:any, item:any) => {
+  const dynamicData = mDLData?.reduce((acc:any, item:any) => {
     if (item.elementIdentifier === 'driving_privileges') {
       // Process the driving privileges to extract vehicle_category_code
       const vehicleCategories = item.elementValue.map((privilege:any) => privilege.vehicle_category_code);
@@ -354,6 +358,11 @@ const Step8Partial = () => {
           };
     })
 
+    useEffect(() => { 
+      if (!completedSteps.includes(2)) {
+        navigate("/"); // Navigate back to Step 1
+      }
+  }, [completedSteps, navigate]);
 
     useEffect(() => {
       if(device){
@@ -434,7 +443,7 @@ const Step8Partial = () => {
                   Application Name
                 </div>
                 <div className="text-gray-500 text-base">
-                  {formData.formData.applicationName || "Orbit Edge Wallet"}
+                  {formData.formData.applicationName ?? ""}
                 </div>
               </div>
               <div className="flex border-b border-slate-200 pb-2 justify-between w-full">
@@ -442,7 +451,7 @@ const Step8Partial = () => {
                   Company Name
                 </div>
                 <div className="text-gray-500 text-base">
-                  {formData.formData.companyName || "Northern Block"}
+                  {formData.formData.companyName || ""}
                 </div>
               </div>
               <div className="flex border-b border-slate-200 pb-2 justify-between w-full">
@@ -450,7 +459,7 @@ const Step8Partial = () => {
                   Application Version
                 </div>
                 <div className="text-gray-500 text-base">
-                  {formData.formData.applicationVersion || "1.0.0"}
+                  {formData.formData.applicationVersion || ""}
                 </div>
               </div>
               <div className="flex border-b border-slate-200 pb-2 justify-between w-full gap-5">
@@ -458,8 +467,7 @@ const Step8Partial = () => {
                   Short Description of the App
                 </div>
                 <div className="text-gray-500 text-base text-right flex-1">
-                  {formData.formData.description ||
-                    "Mobile wallet that can receive, store, and share credentials."}
+                  {formData.formData.description || ""}
                 </div>
               </div>
               <div className="flex border-b border-slate-200 pb-2 justify-between w-full">
@@ -467,7 +475,7 @@ const Step8Partial = () => {
                   Mobile Type
                 </div>
                 <div className="text-gray-500 text-base">
-                  {formData.formData.mobileType || "Android"}
+                  {formData.formData.mobileType || ""}
                 </div>
               </div>
             </div>
@@ -543,7 +551,7 @@ const Step8Partial = () => {
                 <div className="text-gray-700 text-base font-medium">
                   Issuer Certificate
                 </div>
-                <div className="text-gray-500 text-base">{IsValidCert ?? 'Valid'}</div>
+                <div className="text-gray-500 text-base">{IsValidCert ?? ''}</div>
               </div>
               <div className="flex border-b border-slate-200 pb-2 justify-between w-full">
                 <div className="text-gray-700 text-base font-medium">mDL</div>
@@ -559,13 +567,13 @@ const Step8Partial = () => {
                 </div>
 
                 <div className="text-gray-500 text-base">
-                {nameSpaceRead ?? 'org.iso.18013.5.1.mDL'}
+                {nameSpaceRead ?? ''}
                 </div>
               </div>
             </div>
           </div>
         </div>
-        {DownloadSuccess &&
+        {downloadSuccess &&
           <div
           className="inline-flex justify-center items-center hover:border-blue-600 gap-1.5 w-full h-full p-2.5 bg-[#E9F8F1] border border-[#A9E3C7] rounded-md shadow-sm "
         >
@@ -588,7 +596,6 @@ const Step8Partial = () => {
           className="inline-flex justify-center items-center hover:border-blue-600 gap-1.5 w-full h-full p-2 bg-blue-600 border border-[#EAEBF0] rounded-md shadow-sm "
         >
           <div
-            onClick={()=>generatePDF(dynamicData)}
             className="text-[white] text-sm font-semibold "
           >
             Download
