@@ -32,13 +32,16 @@ If you already have Node.js installed but need to upgrade to version 20, you can
 # npm install --force
 ```
 
+Alternatively, you can run `npm install --legacy-peer-deps`. Both `--force` and `--legacy-peer-deps` flags are used to ignore or force dependency resolutions (i.e. to bypass peer dependency conflicts).
+
+For more information, see the [Note on Dependencies](#note-on-dependencies) section.
+
 ## Running the app
 
 4. Start the Development Server: After the dependencies are installed, you can start the Vite development server:
 
 ```bash
 # npm run dev
-
 ```
 
 This will start the application, and you can access it by opening your browser and visiting:
@@ -64,3 +67,11 @@ This will serve the production build locally on a server, allowing you to test t
 
 http://localhost:5173/
 
+## Note on Dependencies
+
+The `react-qr-reader` library is no longer maintained, and due to their outdated React version, the `--force` flag is required when running `npm install`.
+
+Consider replacing it with another library that is actively maintained or has better support for QR code scanning, such as:
+
+- [`@zxing/browser`](https://www.npmjs.com/package/@zxing/browser)
+- [`react-zxing`](https://www.npmjs.com/package/react-zxing)
